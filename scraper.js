@@ -1,55 +1,72 @@
-const cheerio = require("cheerio");
-const puppeteer = require("puppeteer");
-
-const getValue = (cheerio, text) =>
-  cheerio(`span:contains("${text}")`).parent().parent().children("span").text();
-
-const getProblem = (cheerio, index) => {
-  const top = cheerio('span[class^="difficulty-ac-count"]').eq(index).parent();
-  return `${top.children().eq(0).text()}/${top.children().eq(1).text()}`;
-};
-
-const getProblems = (cheerio) =>
-  cheerio('div[class^="total-solved-count"]').text();
-
-const getSolutions = (cheerio) =>
-  cheerio(".ant-card-head-title").eq(3).text().split(" ")[0];
-
-const getAcceptance = (cheerio) =>
-  cheerio('div[class^="total-solved-count"]')
-    .parent()
-    .parent()
-    .children()
-    .eq(1)
-    .text()
-    .replace("Acceptance", "");
-
 (async () => {
   const username = "ethanneff";
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(`https://leetcode.com/${username}/`);
-  await page.waitForSelector(".ant-card");
-  const html = await page.content();
-  const $ = cheerio.load(html);
-  const scrape = {
+  const year = null;
+  const url = "https://leetcode.com/graphql";
+  const config = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: `query getUserProfile($username: String!, $year: Int) {
+      allQuestionsCount {
+        difficulty
+        count
+      }
+      matchedUser(username: $username) {
+        contributions {
+          points
+        }
+        profile {
+          reputation
+          ranking
+        }
+        userCalendar(year: $year) {
+          streak
+          totalActiveDays
+          dccBadges {
+            timestamp
+            badge {
+              name
+              icon
+            }
+          }
+          submissionCalendar
+          activeYears
+        }
+        submissionCalendar
+        submitStats {
+          acSubmissionNum {
+            difficulty
+            count
+            submissions
+          }
+          totalSubmissionNum {
+            difficulty
+            count
+            submissions
+          }
+        }
+      }
+    }`,
+      variables: { username, year },
+    }),
+  };
+
+  const { data } = await fetch(url, config).then((response) => response.json());
+  const output = {
     solutions: {
-      problems: getProblems($),
-      submissions: getSolutions($),
-      acceptance: getAcceptance($),
-      easy: getProblem($, 0),
-      medium: getProblem($, 1),
-      hard: getProblem($, 2),
+      problems: `${data.matchedUser.submitStats.totalSubmissionNum[0].count}`,
+      submissions: `${data.matchedUser.submitStats.totalSubmissionNum[0].submissions}`,
+      easy: `${data.matchedUser.submitStats.totalSubmissionNum[1].count}/${data.allQuestionsCount[1].count}`,
+      medium: `${data.matchedUser.submitStats.totalSubmissionNum[2].count}/${data.allQuestionsCount[2].count}`,
+      hard: `${data.matchedUser.submitStats.totalSubmissionNum[3].count}/${data.allQuestionsCount[3].count}`,
     },
     contributions: {
-      points: getValue($, "Points"),
-      problems: getValue($, "Problems"),
-      testCases: getValue($, "Testcases"),
-      reputation: getValue($, "Reputation"),
+      points: `${data.matchedUser.contributions.points}`,
+      ranking: `${data.matchedUser.profile.ranking}`,
+      reputation: `${data.matchedUser.profile.reputation}`,
     },
-    username,
+    username: username,
   };
-  const prettyJson = JSON.stringify(scrape, null, 2);
-  await browser.close();
+  const prettyJson = JSON.stringify(output, null, 2);
   return console.log(prettyJson);
 })();
