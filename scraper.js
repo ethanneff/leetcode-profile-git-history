@@ -1,11 +1,12 @@
 (async () => {
+  const axios = require("axios");
   const username = "ethanneff";
   const year = null;
   const url = "https://leetcode.com/graphql";
   const config = {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    data: JSON.stringify({
       query: `query getUserProfile($username: String!, $year: Int) {
       allQuestionsCount {
         difficulty
@@ -50,8 +51,9 @@
       variables: { username, year },
     }),
   };
-
-  const { data } = await fetch(url, config).then((response) => response.json());
+  const {
+    data: { data },
+  } = await axios.request(url, config);
   const output = {
     solutions: {
       problems: `${data.matchedUser.submitStats.totalSubmissionNum[0].count}`,
@@ -67,6 +69,6 @@
     },
     username: username,
   };
-  const prettyJson = JSON.stringify(output, null, 2);
-  return console.log(prettyJson);
+  const formatted = JSON.stringify(output, null, 2);
+  return console.log(formatted);
 })();
