@@ -4,7 +4,7 @@ on:
   push: # push to any branch
   workflow_dispatch: # manual
   schedule: # every 30 minutes
-    - cron: "0,30 * * * *"
+    - cron: "0 * * * *"
 
 jobs:
   scheduled:
