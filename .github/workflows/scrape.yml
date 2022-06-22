@@ -1,10 +1,10 @@
 name: Scrape leetcode
 
 on:
-  push:
-  workflow_dispatch:
-  schedule:
-    - cron: "6,26,46 * * * *"
+  push: # push to any branch
+  workflow_dispatch: # manual
+  schedule: # every 30 minutes
+    - cron: "0,30 * * * *"
 
 jobs:
   scheduled:
